@@ -1,0 +1,30 @@
+const int buttonOne = 2;
+const int buttonTwo = 3;
+const int buttonThree = 4;
+
+// variables will change:
+int buttonOneState = 0;
+int buttonTwoState = 0;
+int buttonThreeState = 0;// variable for reading the pushbutton status
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(buttonOne, INPUT);
+  pinMode(buttonTwo, INPUT);
+  pinMode(buttonThree, INPUT);
+}
+
+void loop() {
+  buttonOneState = digitalRead(buttonOne);
+  buttonTwoState = digitalRead(buttonTwo);
+  buttonThreeState = digitalRead(buttonThree);
+  if(buttonOneState == HIGH){
+    Serial.print("1");
+  }
+  if(buttonTwoState == HIGH){
+    Serial.print("2");
+  }
+  if(buttonThreeState == HIGH){
+    Serial.print("3");
+  }
+}
