@@ -1,0 +1,52 @@
+#include "SSD1306Ascii.h"
+#include "SSD1306AsciiAvrI2c.h"
+#define I2C_ADDRESS 0x3C
+#define RST_PIN -1
+SSD1306AsciiAvrI2c oled;
+
+void setup() {
+
+#if RST_PIN >= 0
+  oled.begin(&Adafruit128x64, I2C_ADDRESS, RST_PIN);
+#else // RST_PIN >= 0
+  oled.begin(&Adafruit128x64, I2C_ADDRESS);
+#endif // RST_PIN >= 0
+  String selection = "G4";
+  int currentPitch = 440;
+  int targetPitch = 440;
+  int tensionAdjustment = 1;
+  oled.setFont(Adafruit5x7);
+  drawScreen(selection, currentPitch, targetPitch, tensionAdjustment);
+}
+
+void loop() {
+  
+}
+
+void drawScreen(String selection, int currentPitch, int targetPitch, int tensionAdjustment){
+  oled.clear();
+  oled.set2X();
+  oled.setCursor(60,2);
+  oled.print(selection.substring(0,1));
+  oled.set1X();
+  oled.setCursor(70,4);
+  oled.print(selection.substring(1));
+  oled.setCursor(15,6);
+  oled.print(String(currentPitch));
+  oled.setCursor(35,6);
+  oled.print("Hz");
+  oled.setCursor(60,6);
+  if(tensionAdjustment == 0){
+    oled.print("/\\");
+  }
+  else if(tensionAdjustment == 1){
+    oled.print("==");
+  }
+  else if(tensionAdjustment == 2){
+    oled.print("\\/");
+  }
+  oled.setCursor(85,6);
+  oled.print(String(targetPitch));
+  oled.setCursor(105,6);
+  oled.print("Hz");
+}

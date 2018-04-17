@@ -21,4 +21,4 @@ git clone https://github.com/JackP2112/IOTProjectSemester2.git
 
 * **arduinoFFT** by Enrique Condes V1.4.0
 * Microphone Code by [Mads Aasvik](https://www.norwegiancreations.com/2017/08/what-is-fft-and-how-can-you-implement-it-on-an-arduino/)
-* **Adafruit\_GFX\_Library** and **Adafruit\_SSD1306** by Limor Fried/Ladyada for Adafruit Industries.
+* **SSD1306Ascii** by Bill Greiman V1.0.0
