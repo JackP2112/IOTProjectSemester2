@@ -1,0 +1,102 @@
+#include "SSD1306Ascii.h"
+#include "SSD1306AsciiAvrI2c.h"
+#define I2C_ADDRESS 0x3C
+#define RST_PIN -1
+SSD1306AsciiAvrI2c oled;
+
+const int buttonOne = 2;
+const int buttonTwo = 3;
+const int buttonThree = 4;
+int buttonOneState = 0;
+int buttonTwoState = 0;
+int buttonThreeState = 0;
+char selectionNote = 'E';
+int selectionOctave = 2;
+int currentPitch = 440;
+int targetPitch;
+
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(buttonOne, INPUT);
+  pinMode(buttonTwo, INPUT);
+  pinMode(buttonThree, INPUT);
+  #if RST_PIN >= 0
+  oled.begin(&Adafruit128x64, I2C_ADDRESS, RST_PIN);
+#else // RST_PIN >= 0
+  oled.begin(&Adafruit128x64, I2C_ADDRESS);
+#endif // RST_PIN >= 0
+  oled.setFont(Adafruit5x7);
+}
+
+void loop() {
+  selectPitch();
+  drawScreen();
+}
+
+void selectPitch(){
+  delay(100);
+  buttonOneState = digitalRead(buttonOne);
+  buttonThreeState = digitalRead(buttonThree);
+  if(buttonOneState == HIGH){
+    if(selectionNote == 'C' && selectionOctave == 2){
+    }
+    else{
+      if(selectionNote == 'C'){
+        selectionNote--;
+        selectionOctave--;
+      }
+      else if(selectionNote == 'A'){
+        selectionNote = 'G';
+      }
+      else{
+        selectionNote--;
+      }
+    }
+    oled.clear();
+  }
+  if(buttonThreeState == HIGH){
+    if(selectionNote == 'A' && selectionOctave == 4){
+    }
+    else{
+      if(selectionNote == 'B'){
+        selectionNote++;
+        selectionOctave++;
+      }
+      else if(selectionNote == 'G'){
+        selectionNote = 'A';
+      }
+      else{
+        selectionNote++;
+      }
+    }
+    oled.clear();
+  }
+}
+
+void drawScreen(){
+  oled.set2X();
+  oled.setCursor(60,2);
+  oled.print(selectionNote);
+  oled.set1X();
+  oled.setCursor(70,4);
+  oled.print(selectionOctave);
+  oled.setCursor(15,6);
+  oled.print(String(currentPitch));
+  oled.setCursor(35,6);
+  oled.print("Hz");
+  oled.setCursor(60,6);
+  if(currentPitch < targetPitch){
+    oled.print("/\\");
+  }
+  else if(currentPitch == targetPitch){
+    oled.print("==");
+  }
+  else if(currentPitch > targetPitch){
+    oled.print("\\/");
+  }
+  oled.setCursor(85,6);
+  oled.print(String(targetPitch));
+  oled.setCursor(105,6);
+  oled.print("Hz");
+}
