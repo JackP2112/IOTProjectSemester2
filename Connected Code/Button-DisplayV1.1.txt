@@ -13,7 +13,8 @@ int buttonThreeState = 0;
 char selectionNote = 'E';
 int selectionOctave = 2;
 int currentPitch = 440;
-int targetPitch;
+int targetPitch = 82;
+float twelfthRootTwo = 1.059463094;
 
 
 void setup() {
@@ -53,6 +54,7 @@ void selectPitch(){
         selectionNote--;
       }
     }
+    getTargetPitch();
     oled.clear();
   }
   if(buttonThreeState == HIGH){
@@ -70,8 +72,43 @@ void selectPitch(){
         selectionNote++;
       }
     }
+    getTargetPitch();
     oled.clear();
   }
+}
+
+void getTargetPitch(){
+  int semitoneDifference = 0;
+  char searchNote = 'A';
+  int searchOctave = 4;
+  boolean differenceFound = false;
+  while(!differenceFound){
+    if(searchNote == selectionNote && searchOctave == selectionOctave){
+      differenceFound = true;
+    }
+    else{
+      if(searchNote == 'C'){
+        searchNote--;
+        searchOctave--;
+        semitoneDifference++;
+      }
+      else if(searchNote == 'F'){
+        searchNote--;
+        semitoneDifference++;
+      }
+      else if(searchNote == 'A'){
+        searchNote = 'G';
+        semitoneDifference += 2;
+      }
+      else{
+        searchNote--;
+        semitoneDifference += 2;
+      }
+    }
+  }
+  Serial.println(semitoneDifference);
+  targetPitch = 440*pow(twelfthRootTwo, -semitoneDifference);
+  Serial.println(targetPitch);
 }
 
 void drawScreen(){
