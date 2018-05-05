@@ -1,0 +1,204 @@
+#include "SSD1306Ascii.h"
+#include "SSD1306AsciiAvrI2c.h"
+#define I2C_ADDRESS 0x3C
+#define RST_PIN -1
+SSD1306AsciiAvrI2c oled;
+
+#include "arduinoFFT.h"
+ 
+#define SAMPLES 128             //Must be a power of 2
+#define SAMPLING_FREQUENCY 1000 //Hz, must be less than 10000 due to ADC
+ 
+arduinoFFT FFT = arduinoFFT();
+ 
+unsigned int sampling_period_us;
+unsigned long microseconds;
+ 
+double vReal[SAMPLES];
+double vImag[SAMPLES];
+const int buttonOne = 2;
+const int buttonTwo = 3;
+const int buttonThree = 4;
+int buttonOneState = 0;
+int buttonTwoState = 0;
+int buttonThreeState = 0;
+char selectionNote = 'E';
+int selectionOctave = 2;
+int currentPitch = 440;
+int targetPitch = 82;
+float twelfthRootTwo = 1.059463094;
+int adjustment = 1;
+
+
+void setup() {
+  sampling_period_us = round(1000000*(1.0/SAMPLING_FREQUENCY));
+  pinMode(buttonOne, INPUT);
+  pinMode(buttonTwo, INPUT);
+  pinMode(buttonThree, INPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  #if RST_PIN >= 0
+  oled.begin(&Adafruit128x64, I2C_ADDRESS, RST_PIN);
+#else // RST_PIN >= 0
+  oled.begin(&Adafruit128x64, I2C_ADDRESS);
+#endif // RST_PIN >= 0
+  oled.setFont(Adafruit5x7);
+}
+
+void loop() {
+  getCurrentPitch();
+  selectPitch();
+  drawScreen();
+  if(digitalRead(buttonTwo) == HIGH){
+    tensionAdjustment();
+  }
+  else{
+    digitalWrite(9, LOW);
+    digitalWrite(10, LOW);
+  }
+}
+
+void getCurrentPitch(){
+    for(int i=0; i<SAMPLES; i++)
+    {
+        microseconds = micros();    //Overflows after around 70 minutes!
+     
+        vReal[i] = analogRead(0);
+        vImag[i] = 0;
+     
+        while(micros() < (microseconds + sampling_period_us)){
+        }
+    }
+ 
+    /*FFT*/
+    FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
+    FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
+    double peak = FFT.MajorPeak(vReal, SAMPLES, SAMPLING_FREQUENCY);
+ 
+    /*PRINT RESULTS*/
+    currentPitch = peak;
+ 
+    delay(500);  //Repeat the process every second
+}
+
+void selectPitch(){
+  delay(100);
+  buttonOneState = digitalRead(buttonOne);
+  buttonThreeState = digitalRead(buttonThree);
+  if(buttonOneState == HIGH){
+    if(selectionNote == 'C' && selectionOctave == 2){
+    }
+    else{
+      if(selectionNote == 'C'){
+        selectionNote--;
+        selectionOctave--;
+      }
+      else if(selectionNote == 'A'){
+        selectionNote = 'G';
+      }
+      else{
+        selectionNote--;
+      }
+    }
+    getTargetPitch();
+    oled.clear();
+  }
+  if(buttonThreeState == HIGH){
+    if(selectionNote == 'A' && selectionOctave == 4){
+    }
+    else{
+      if(selectionNote == 'B'){
+        selectionNote++;
+        selectionOctave++;
+      }
+      else if(selectionNote == 'G'){
+        selectionNote = 'A';
+      }
+      else{
+        selectionNote++;
+      }
+    }
+    getTargetPitch();
+    oled.clear();
+  }
+}
+
+void getTargetPitch(){
+  int semitoneDifference = 0;
+  char searchNote = 'A';
+  int searchOctave = 4;
+  boolean differenceFound = false;
+  while(!differenceFound){
+    if(searchNote == selectionNote && searchOctave == selectionOctave){
+      differenceFound = true;
+    }
+    else{
+      if(searchNote == 'C'){
+        searchNote--;
+        searchOctave--;
+        semitoneDifference++;
+      }
+      else if(searchNote == 'F'){
+        searchNote--;
+        semitoneDifference++;
+      }
+      else if(searchNote == 'A'){
+        searchNote = 'G';
+        semitoneDifference += 2;
+      }
+      else{
+        searchNote--;
+        semitoneDifference += 2;
+      }
+    }
+  }
+  Serial.println(semitoneDifference);
+  targetPitch = 440*pow(twelfthRootTwo, -semitoneDifference);
+  Serial.println(targetPitch);
+}
+
+void drawScreen(){
+  oled.set2X();
+  oled.setCursor(60,2);
+  oled.print(selectionNote);
+  oled.set1X();
+  oled.setCursor(70,4);
+  oled.print(selectionOctave);
+  oled.setCursor(15,6);
+  oled.print(String(currentPitch));
+  oled.setCursor(35,6);
+  oled.print("Hz");
+  oled.setCursor(60,6);
+  if(currentPitch < targetPitch){
+    oled.print("/\\");
+    adjustment = 2;
+  }
+  else if(currentPitch == targetPitch){
+    oled.print("==");
+    adjustment = 1;
+  }
+  else if(currentPitch > targetPitch){
+    oled.print("\\/");
+    adjustment = 0;
+  }
+  oled.setCursor(85,6);
+  oled.print(String(targetPitch));
+  oled.setCursor(105,6);
+  oled.print("Hz");
+}
+
+void tensionAdjustment(){
+  if(adjustment == 0){
+    digitalWrite(9, HIGH);
+    digitalWrite(10, LOW);
+  }
+  else if(adjustment == 1){
+    digitalWrite(9, LOW);
+    digitalWrite(10, LOW);
+  }
+  else if(adjustment == 2){
+    digitalWrite(9, LOW);
+    digitalWrite(10, HIGH);
+  }
+}
